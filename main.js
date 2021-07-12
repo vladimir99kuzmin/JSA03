@@ -1,6 +1,6 @@
 class Good { //этот плоский класс нужен онли для описания товара. в шарпах можно было бы использовать struct
     constructor(image, name, descr, price) {
-        this._image = image;
+        this._image = image == ''?'https://place-hold.it/150': image;
         this._name = name;
         this._descr = descr;
         this._price = price;
@@ -39,9 +39,6 @@ class GoodsManager {
     add(item) {
         if (typeof item === typeof new Good()) this._list.push(item);
     }
-    concat(array) {
-        this._list.concat(array); //представим, что тут есть проверки...
-    }
     fullGoodsList() { //а тут может быть какой-нить запрос, вместо вбивания номенклатуры ручками. ps только опосля заметил подобный метод (fetchGoods()) в методичке, сижу довольный, что сам дошел до этого С:
         const good10 = new Good('https://place-hold.it/150', 'Товар 10', 'Описание товара 10', 199); //это для примера
         goodsManager.add(new Good('https://place-hold.it/150', 'Товар 1', 'Описание товара 1', 101));
@@ -73,14 +70,14 @@ class GoodsManager {
                 }
             }
         });
-        promise.then((servGoodList) => {
-            this.concat(this.#goodsConvert(servGoodList));
+        promise.then((servGoodList) => {            
+            additionalGoods(this.#goodsConvert(servGoodList));
         })
     }
     #goodsConvert(servGoodList) {
         let newGoodList = [];
         servGoodList.forEach(element => {
-            newGoodList.push(new Good(`https://place-hold.it/150`, element.product_name, '', element.price));            
+            newGoodList.push(new Good('', element.product_name, '', element.price));            
         });
         return newGoodList;
     }
@@ -88,10 +85,13 @@ class GoodsManager {
 
 class GoodPresenter { //в методичке метод "render()" находится в классе GoodsList (мой аналог GoodsManager). Я с этим делом не согласен, так как считаю, что ответственности нужно разделять. Пусть уж Лист занимается листом, а Отоброжатель отображением.
     constructor(list) {
-        this._goodsList = goods.map(item => item.render);
+        this.setGoodList(list);
     }
     present() {
         document.querySelector('.goodsbox__handler').innerHTML = this._goodsList.join('');
+    }
+    setGoodList(list) {
+        this._goodsList = list.map(item => item.render);
     }
 }
 
@@ -130,33 +130,21 @@ class CartPresenter {
 
 }
 
-//по поводу корзины все банально. подобные типы - подобные классы
-// API_URL = 'https://raw.githubusercontent.com/GeekBrainsTutorial/online-store-api/master/responses';
-// function makeGETRequest(url, callback) {
-//     var xhr;
-//     if (window.XMLHttpRequest) {
-//         xhr = new XMLHttpRequest();
-//     } else if (window.ActiveXObject) {
-//         xhr = new ActiveXObject("Microsoft.XMLHTTP");
-//     }
-//     xhr.onreadystatechange = function () {
-//         if (xhr.readyState === 4) {
-//             let a = JSON.parse(xhr.responseText);
-//             goodsManager.add(new Good('', a[0].product_name, '', a[0].price));
-//             other();
-//         }
-//     }
-//     xhr.open('GET', url, true);
-//     xhr.send();
-// }
+
 const goodsManager = new GoodsManager();
 goodsManager.fullGoodsList();
-const goods = goodsManager.get;
-const goodPresenter = new GoodPresenter(goods);
+const goodsFromManager = goodsManager.get;
+const goodPresenter = new GoodPresenter(goodsFromManager);
 goodPresenter.present();
 console.log(goodsManager.totalPrice);
 
-
+function additionalGoods(newGoods) { //дорогая мышка получается
+    newGoods.forEach(element => {
+        goodsManager.add(element);
+    });
+    goodPresenter.setGoodList(goodsManager.get);
+    goodPresenter.present();
+}
 
 
 
